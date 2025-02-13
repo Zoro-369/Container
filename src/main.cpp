@@ -1,28 +1,37 @@
-#include "namespace_manager.h"
-#include "cgroup_manager.h"
-#include "overlayfs_manager.h"
+#include "namespaceManager.h"
+#include "cgroupManager.h"
+#include "overlayFSManager.h"
 #include "utils.h"
 #include <sys/mount.h>
-#include<stdio.h>
+#include<iostream>
+#include <stdio.h>
+#include <string>
+int main()
+{
+    std::string lowerDir = "containerRoot/lowerdir";
+    std::string upperDir = "containerRoot/upperdir";
+    std::string workDir = "containerRoot/workdir";
+    std::string mergedDir = "containerRoot/merged";
 
-int main() {
-    // Setup OverlayFS
-   
-    setup_overlayfs();
-    
-    // Setup Cgroups
-    setup_cgroups();
-    
-    // Setup Namespaces
-    setup_namespaces();
+    try
+    {
+        // setup_overlayfs();
+        OverlayFSManager overlay(lowerDir, upperDir, workDir, mergedDir);
 
-    // Enter the container environment
-    // enter_container();
+        // Setup Cgroups
+        CgroupManager cgManager;
 
-    // Cleanup (Unmount OverlayFS)
-    if (umount2(MERGED, MNT_DETACH) == -1) {
-    perror("Lazy umount failed");
-}
+        // Setup Namespaces
+        NamespaceManager nsManager;
+        // nsManager.setup();
+
+        // Fork and enter the container
+        nsManager.forkAndEnterContainer();
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
 
     return 0;
 }

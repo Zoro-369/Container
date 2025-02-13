@@ -1,25 +1,20 @@
 #include "utils.h"
 #include <sys/stat.h>
-#include <sys/types.h>
+#include <dirent.h>
 #include <iostream>
-#include<dirent.h>
-#include <iostream>
+#include <string.h>
 #include <unistd.h>
 #include <sys/mount.h>
-#include <sys/wait.h>
-#include <stdlib.h>
-#include <cstring>
-#include "overlayfs_manager.h"
 
-void create_directory(const char *path) {
-    if (mkdir(path, 0755) == -1 && errno != EEXIST) {
+void Utils::createDirectory(const std::string& path) {
+    if (mkdir(path.c_str(), 0755) == -1 && errno != EEXIST) {
         perror("mkdir failed");
         exit(EXIT_FAILURE);
     }
 }
 
-bool is_directory_empty(const char *path) {
-    DIR *dir = opendir(path);
+bool Utils::isDirectoryEmpty(const std::string& path) {
+    DIR *dir = opendir(path.c_str());
     if (dir == nullptr) {
         return true;  // Consider the directory empty if it cannot be opened
     }
@@ -34,36 +29,19 @@ bool is_directory_empty(const char *path) {
     return true;  // Directory is empty
 }
 
-
-
-
-void enter_container() {
-    if (chroot(MERGED) == -1) {
-        perror("chroot failed");
+// Utility function to write to a file
+void Utils::writeToFile(const char* path, const char* data) {
+    int fd = open(path, O_WRONLY);
+    if (fd == -1) {
+        perror(path);
         exit(EXIT_FAILURE);
     }
-
-    if (chdir("/") == -1) {
-        perror("chdir failed");
+    if (write(fd, data, strlen(data)) == -1) {
+        perror("write failed");
+        close(fd);
         exit(EXIT_FAILURE);
     }
-    // Ensure /proc exists
-    mkdir("/proc", 0555);
-
-    // Mount the proc filesystem
-    if (mount("proc", "/proc", "proc", 0, NULL) == -1) {
-        perror("Failed to mount /proc");
-        exit(EXIT_FAILURE);
-    }
-    std::cout<<"proc mounted successfully\n";
-    const char* shell = "/bin/sh";
-    char *const args[] = {"/bin/sh", nullptr};
-
-    if (execvp(shell, args) == -1) {
-        perror("execvp failed");
-        exit(EXIT_FAILURE);
-    }
+    close(fd);
 }
-
 
 
